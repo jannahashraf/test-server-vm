@@ -48,10 +48,14 @@ Other commands:
 traffic only against the local VM. It refuses any target outside
 `127.0.0.0/8` and `192.168.56.0/24`.
 
-Start the web server with logging from the host (it restarts it in the VM and
-writes `~/web_access.log` there):
+Start the web server in Docker on the host. It listens on `127.0.0.1:8766`
+because Vagrant already forwards host port 8765 to the VM:
 
-    python3 start_web_server.py
+    docker compose up -d web
+
+Probe the Docker web server with:
+
+    python3 attack_simulator.py --scenario web-probe --target 127.0.0.1 --web-port 8766 --count 10
 
 Then, from this folder on the host:
 
@@ -61,15 +65,17 @@ Then, from this folder on the host:
     python3 attack_simulator.py --scenario ssh-fail --count 10 --delay 0.5
     python3 attack_simulator.py --dry-run
 
-Inspect the generated events on the VM:
+Inspect the generated events:
 
     sudo journalctl -u ssh -n 50 --no-pager
     sudo journalctl -u ssh | grep -E 'Invalid user|Failed password|preauth'
+    docker compose logs --tail 50 web
 
 ## Log collection
 
-`collect_logs.py` runs on the host, pulls SSH and web logs from the VM, and
-writes timestamped raw logs plus a JSONL dataset into `logs/` (ignored by git).
+`collect_logs.py` runs on the host, pulls SSH logs from the VM and web logs from
+the Docker container (falling back to the VM web log), and writes timestamped
+raw logs plus a JSONL dataset into `logs/` (ignored by git).
 Optionally merge the simulator's own output by teeing it:
 
     python3 attack_simulator.py --count 10 | tee simulator.log

@@ -1,0 +1,7 @@
+services:
+  web:
+    image: nginx:alpine
+    container_name: test-server-vm-web
+    ports:
+      - "127.0.0.1:8766:80"
+    restart: unless-stopped
